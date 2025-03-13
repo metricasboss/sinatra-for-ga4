@@ -3,6 +3,8 @@
 ## Overview
 The "Sinatra for Google Analytics 4" custom tag template was developed by Métricas Boss to replicate Google Analytics 4 events for consumption via a webhook. This template allows users to forward GA4 events to a designated server endpoint, enabling further event processing and integration with external systems.
 
+![template](https://imagens.metricasboss.com.br/image_7fe387523b.png)
+
 ## Features
 - **Event Replication:** Captures GA4 events using the GTM `addEventCallback` API and replicates them to a specified webhook endpoint.
 - **Customizable Endpoint:** Users can configure the destination server URL through the advanced settings (`server_container_url`). An optional `account_id` field can also be set to include additional identifier information.
