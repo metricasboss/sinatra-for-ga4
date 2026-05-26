@@ -49,9 +49,10 @@ function sendRaw(params, config) {
     qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
   }
   var en = params['en'] || 'unknown';
-  console.log('[Sinatra] enviando (raw):', en);
+  var debug = config.debug === true;
+  if (debug) console.log('[Sinatra] enviando (raw):', en);
   fetch(ENDPOINT + qs, { method: 'GET', keepalive: true })
-    .then(function (r) { console.log('[Sinatra] ✅ status:', r.status, '| evento:', en); })
+    .then(function (r) { if (debug) console.log('[Sinatra] ✅ status:', r.status, '| evento:', en); })
     .catch(function (e) { console.error('[Sinatra] ❌ erro:', e); });
 }
 
@@ -60,18 +61,20 @@ function sendRaw(params, config) {
   if (typeof window === 'undefined') return;
 
   if (window.__sinatraLoaded) {
-    console.log('[Sinatra] já carregado.');
+    if (window.__sinatra && window.__sinatra.debug) console.log('[Sinatra] já carregado.');
     return;
   }
   window.__sinatraLoaded = true;
 
   var config = window.__sinatra;
   if (!config || !config.accountId || !config.token) {
-    console.warn('[Sinatra] ❌ accountId ou token ausente. config:', JSON.stringify(config));
+    var miss = !config ? 'config' : [!config.accountId && 'accountId', !config.token && 'token'].filter(Boolean).join(', ');
+    console.warn('[Sinatra] ❌ config inválida. faltando:', miss);
     return;
   }
-
-  console.log('[Sinatra] ✅ init | account:', config.accountId);
+  var DEBUG = config.debug === true;
+  function log() { if (DEBUG) console.log.apply(console, arguments); }
+  log('[Sinatra] ✅ init | account:', config.accountId);
 
   // === fetch intercept — captura page_view, scroll e eventos automáticos via GET ===
   var _fetch = window.fetch;
@@ -79,14 +82,14 @@ function sendRaw(params, config) {
     window.fetch = function (resource, init) {
       var url = typeof resource === 'string' ? resource : (resource && resource.url) || '';
       if (isGA4(url)) {
-        console.log('[Sinatra] 🎯 GA4 via fetch:', url);
+        log('[Sinatra] 🎯 GA4 via fetch:', url);
         var bodyStr = (init && typeof init.body === 'string') ? init.body : null;
         var params = mergeParams(url, bodyStr);
         try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro fetch intercept:', e); }
       }
       return _fetch.apply(this, arguments);
     };
-    console.log('[Sinatra] fetch patchado.');
+    log('[Sinatra] fetch patchado.');
   }
 
   // === sendBeacon intercept ===
@@ -99,7 +102,7 @@ function sendRaw(params, config) {
           data.text().then(function (bodyStr) {
             var params = mergeParams(urlStr, bodyStr);
             if (!params.tid || params.tid.indexOf('G-') !== 0) return;
-            console.log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
+            log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
             try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro sendBeacon intercept:', e); }
           });
         } else {
@@ -107,14 +110,14 @@ function sendRaw(params, config) {
             : (data instanceof URLSearchParams ? data.toString() : null);
           var params = mergeParams(urlStr, bodyStr);
           if (params.tid && params.tid.indexOf('G-') === 0) {
-            console.log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
+            log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
             try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro sendBeacon intercept:', e); }
           }
         }
       }
       return _sendBeacon(url, data);
     };
-    console.log('[Sinatra] sendBeacon patchado.');
+    log('[Sinatra] sendBeacon patchado.');
   }
 
   // === XHR fallback ===
@@ -127,14 +130,14 @@ function sendRaw(params, config) {
   XMLHttpRequest.prototype.send = function (body) {
     var url = this._sinatraUrl || '';
     if (isGA4(url)) {
-      console.log('[Sinatra] 🎯 GA4 via XHR:', url);
+      log('[Sinatra] 🎯 GA4 via XHR:', url);
       var params = mergeParams(url, typeof body === 'string' ? body : null);
       try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro XHR intercept:', e); }
     }
     return _xhrSend.apply(this, arguments);
   };
 
-  console.log('[Sinatra] 🚀 pronto. fetch + sendBeacon + XHR ativos.');
+  log('[Sinatra] 🚀 pronto. fetch + sendBeacon + XHR ativos.');
 })();
 
 if (typeof module !== 'undefined' && module.exports) {

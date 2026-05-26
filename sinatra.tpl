@@ -65,6 +65,13 @@ ___TEMPLATE_PARAMETERS___
         "displayName": "GA4 Measurement ID",
         "simpleValueType": true,
         "help": "ID de medição do GA4 (ex: G-XXXXXXXX). Usado como fallback caso o hit interceptado não contenha o campo tid."
+      },
+      {
+        "type": "CHECKBOX",
+        "name": "debug",
+        "checkboxText": "Habilitar logs no console",
+        "simpleValueType": true,
+        "help": "Quando marcado, o script imprime logs detalhados no console do browser (URLs interceptadas, status do envio). Deixar desmarcado em produção."
       }
     ]
   }
@@ -85,7 +92,8 @@ if (!data.accountId || !data.token) {
 setInWindow('__sinatra', {
   accountId: data.accountId,
   token: data.token,
-  measurementId: data.measurementId || ''
+  measurementId: data.measurementId || '',
+  debug: data.debug === true
 }, true);
 
 const SCRIPT_URL = 'https://gtm-templates.s3.us-east-1.amazonaws.com/sinatra-bundle.js';
