@@ -2,7 +2,7 @@
 
 Replica eventos do GA4 para um endpoint personalizado. Disponível em duas versões: **web** (client-side) e **server-side**.
 
-![template](https://imagens.metricasboss.com.br/image_7fe387523b.png)
+![Sinatra for Google Analytics 4 — template no GTM](docs/template-preview.png)
 
 ---
 
