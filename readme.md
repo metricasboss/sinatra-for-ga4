@@ -1,8 +1,12 @@
 # Sinatra for Google Analytics 4 — Métricas Boss
 
-Replica eventos do GA4 para um endpoint personalizado. Disponível em duas versões: **web** (client-side) e **server-side**.
+Template oficial do GTM para integrar seus eventos do GA4 com o [**Sinatra**](https://www.sinatra.pro) — plataforma de data activation desenvolvida pela [Métricas Boss](https://metricasboss.com.br).
+
+Disponível em duas versões: **web** (client-side) e **server-side**.
 
 ![Sinatra for Google Analytics 4 — template no GTM](docs/template-preview.png)
+
+> Não é um webhook genérico. O endpoint é fixo (`integrations.sinatra.pro`) e os eventos chegam direto na sua workspace do Sinatra, autenticados pelo Account ID + Token gerados na plataforma.
 
 ---
 
@@ -44,8 +48,8 @@ Zero transformação. O backend recebe o mesmo conjunto de chaves que o GA4 envi
 
 | Campo | Obrigatório | Descrição |
 |---|---|---|
-| **Account ID** | Sim | Identificador da conta no Sinatra (ex: `metricasboss`) |
-| **Token** | Sim | Token de autenticação da conta |
+| **Account ID** | Sim | Identificador da sua workspace no Sinatra (gerado em sinatra.pro) |
+| **Token** | Sim | Token de autenticação da workspace |
 | **GA4 Measurement ID** | Não | Fallback caso o hit não contenha `tid` |
 | **Habilitar logs no console** | Não | Liga logs `[Sinatra]` detalhados (use só em debug; ver "Segurança") |
 | **Respeitar Google Consent Mode** | Não | Descarta hits com `analytics_storage=denied` antes de enviar — necessário se o site tem banner de consent (LGPD/GDPR) |
@@ -79,7 +83,7 @@ Roda no server-side GTM container, dispara em todo evento que chega no client GA
 
 | Campo | Obrigatório | Descrição |
 |---|---|---|
-| **Account ID** | Sim | Identificador da conta no Sinatra |
+| **Account ID** | Sim | Identificador da workspace no Sinatra |
 | **Token** | Sim | Token de autenticação |
 | **GA4 Measurement ID** | Não | ID da propriedade GA4 (G-XXXXXXXX) |
 | **Request timeout (ms)** | Não | Timeout da requisição POST (padrão: 5000ms) |
@@ -98,9 +102,9 @@ Browser → sGTM container → GA4 client processa
 
 ## LGPD e privacidade
 
-O Sinatra encaminha os mesmos dados que o GA4 coleta. Se você usa Sinatra, **você precisa**:
+Os mesmos dados que o GA4 coleta são também encaminhados pra sua workspace no Sinatra. Como controlador, você precisa:
 
-1. Listar `integrations.sinatra.pro` como operador na sua política de privacidade
+1. Listar a Métricas Boss (`integrations.sinatra.pro`) como operador na sua política de privacidade
 2. Ter contrato de tratamento de dados (DPA) com a Métricas Boss
 3. Configurar consent + data minimization conforme finalidade
 
