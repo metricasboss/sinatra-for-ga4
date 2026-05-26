@@ -1,13 +1,8 @@
 var GA4_PATH = '/g/collect';
 var ENDPOINT = 'https://integrations.sinatra.pro/analytics/webhooks/events';
 
-function isGA4(url) {
-  return typeof url === 'string' && url.indexOf(GA4_PATH) !== -1 && url.indexOf('tid=G-') !== -1;
-}
-
-function isGA4Path(url) {
-  return typeof url === 'string' && url.indexOf(GA4_PATH) !== -1;
-}
+function isGA4Path(url) { return typeof url === 'string' && url.indexOf(GA4_PATH) !== -1; }
+function isGA4(url) { return isGA4Path(url) && url.indexOf('tid=G-') !== -1; }
 
 function parseQS(str) {
   var out = {};
@@ -24,32 +19,44 @@ function parseQS(str) {
   return out;
 }
 
-function parseBody(body) {
-  if (!body) return {};
-  if (typeof body === 'string') return parseQS(body);
-  return {};
-}
+function parseBody(body) { return body && typeof body === 'string' ? parseQS(body) : {}; }
 
 function mergeParams(url, body) {
   var qi = url.indexOf('?');
-  var urlParams = qi !== -1 ? parseQS(url.slice(qi + 1)) : {};
+  var merged = qi !== -1 ? parseQS(url.slice(qi + 1)) : {};
   var bodyParams = parseBody(body);
-  var merged = {};
-  var k;
-  for (k in urlParams) merged[k] = urlParams[k];
-  for (k in bodyParams) merged[k] = bodyParams[k];
+  for (var k in bodyParams) merged[k] = bodyParams[k];
   return merged;
+}
+
+// gcs format: G1XX onde index 3 = analytics_storage (0=denied, 1=granted)
+function consentGranted(params) {
+  return !params.gcs || params.gcs.charAt(3) !== '0';
+}
+
+function shouldExclude(key, list) {
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i];
+    if (key === p || (p.slice(-1) === '*' && key.indexOf(p.slice(0, -1)) === 0)) return true;
+  }
+  return false;
 }
 
 // Envia wire format GA4 como GET (para eventos interceptados da rede)
 function sendRaw(params, config) {
+  var debug = config.debug === true;
+  if (config.requireConsent && !consentGranted(params)) {
+    if (debug) console.log('[Sinatra] consent denied, skip:', params.en);
+    return;
+  }
+  var ex = config.excludeFields || [];
   var qs = '?account_id=' + encodeURIComponent(config.accountId)
          + '&token=' + encodeURIComponent(config.token);
   for (var k in params) {
+    if (ex.length && shouldExclude(k, ex)) continue;
     qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
   }
   var en = params['en'] || 'unknown';
-  var debug = config.debug === true;
   if (debug) console.log('[Sinatra] enviando (raw):', en);
   fetch(ENDPOINT + qs, { method: 'GET', keepalive: true })
     .then(function (r) { if (debug) console.log('[Sinatra] ✅ status:', r.status, '| evento:', en); })
@@ -93,27 +100,19 @@ function sendRaw(params, config) {
   }
 
   // === sendBeacon intercept ===
+  function handleBeacon(urlStr, bodyStr) {
+    var params = mergeParams(urlStr, bodyStr);
+    if (!params.tid || params.tid.indexOf('G-') !== 0) return;
+    log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
+    try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro sendBeacon intercept:', e); }
+  }
   var _sendBeacon = navigator.sendBeacon ? navigator.sendBeacon.bind(navigator) : null;
   if (_sendBeacon) {
     navigator.sendBeacon = function (url, data) {
       var urlStr = String(url || '');
       if (isGA4Path(urlStr)) {
-        if (data instanceof Blob) {
-          data.text().then(function (bodyStr) {
-            var params = mergeParams(urlStr, bodyStr);
-            if (!params.tid || params.tid.indexOf('G-') !== 0) return;
-            log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
-            try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro sendBeacon intercept:', e); }
-          });
-        } else {
-          var bodyStr = typeof data === 'string' ? data
-            : (data instanceof URLSearchParams ? data.toString() : null);
-          var params = mergeParams(urlStr, bodyStr);
-          if (params.tid && params.tid.indexOf('G-') === 0) {
-            log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
-            try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro sendBeacon intercept:', e); }
-          }
-        }
+        if (data instanceof Blob) data.text().then(function (b) { handleBeacon(urlStr, b); });
+        else handleBeacon(urlStr, typeof data === 'string' ? data : (data instanceof URLSearchParams ? data.toString() : null));
       }
       return _sendBeacon(url, data);
     };

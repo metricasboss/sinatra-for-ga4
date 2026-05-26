@@ -72,6 +72,20 @@ ___TEMPLATE_PARAMETERS___
         "checkboxText": "Habilitar logs no console",
         "simpleValueType": true,
         "help": "Quando marcado, o script imprime logs detalhados no console do browser (URLs interceptadas, status do envio). Deixar desmarcado em produção."
+      },
+      {
+        "type": "CHECKBOX",
+        "name": "requireConsent",
+        "checkboxText": "Respeitar Google Consent Mode (LGPD/GDPR)",
+        "simpleValueType": true,
+        "help": "Quando marcado, eventos com analytics_storage=denied (cookieless pings do Consent Mode) são descartados antes de enviar pro Sinatra. Recomendado se o site coleta consent."
+      },
+      {
+        "type": "TEXT",
+        "name": "excludeFields",
+        "displayName": "Campos a excluir (data minimization)",
+        "simpleValueType": true,
+        "help": "Lista separada por vírgula de campos do wire format GA4 a remover antes de enviar. Aceita wildcard com *. Útil pra LGPD/data minimization. Ex: uafvl, uaa, uab, ep.user_id, ecid, sst.*"
       }
     ]
   }
@@ -89,11 +103,22 @@ if (!data.accountId || !data.token) {
   return data.gtmOnFailure();
 }
 
+const exclude = [];
+if (data.excludeFields) {
+  const parts = data.excludeFields.split(',');
+  for (let i = 0; i < parts.length; i++) {
+    const t = parts[i].trim();
+    if (t) exclude.push(t);
+  }
+}
+
 setInWindow('__sinatra', {
   accountId: data.accountId,
   token: data.token,
   measurementId: data.measurementId || '',
-  debug: data.debug === true
+  debug: data.debug === true,
+  requireConsent: data.requireConsent === true,
+  excludeFields: exclude
 }, true);
 
 const SCRIPT_URL = 'https://gtm-templates.s3.us-east-1.amazonaws.com/sinatra-bundle.js';
