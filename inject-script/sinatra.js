@@ -100,7 +100,6 @@ function sendRaw(params, config) {
             var params = mergeParams(urlStr, bodyStr);
             if (!params.tid || params.tid.indexOf('G-') !== 0) return;
             console.log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
-            _lastGA4Params = params;
             try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro sendBeacon intercept:', e); }
           });
         } else {
@@ -109,7 +108,6 @@ function sendRaw(params, config) {
           var params = mergeParams(urlStr, bodyStr);
           if (params.tid && params.tid.indexOf('G-') === 0) {
             console.log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
-            _lastGA4Params = params;
             try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro sendBeacon intercept:', e); }
           }
         }
