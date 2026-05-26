@@ -10,18 +10,19 @@ Replica eventos do GA4 para um endpoint personalizado. Disponível em duas vers�
 
 | | Web (`sinatra.tpl`) | Server-Side (`sinatra-server.tpl`) |
 |---|---|---|
-| **Método de envio** | POST (sendBeacon/XHR) | POST (sendHttpRequest) |
+| **Método de envio para o Sinatra** | GET com wire format na query string | POST JSON via `sendHttpRequest` |
 | **Requisito** | Qualquer container web GTM | Server-side GTM container |
-| **Como funciona** | Intercepta os hits do GA4 via fetch/sendBeacon | Captura o payload completo no servidor |
-| **Dados capturados** | Hit byte-a-byte: todos os params que o GA4 envia | Payload completo recebido pelo container |
+| **Como funciona** | Monkey-patch em `window.fetch` / `navigator.sendBeacon` / `XMLHttpRequest` para interceptar hits `/g/collect` | Recebe o evento no client GA4 do sGTM e encaminha o payload |
+| **Dados capturados** | Wire format bruto do GA4 (todos os params da URL + body) | Payload completo via `getAllEventData()` |
 | **Fidelidade ao GA4** | Máxima — é o mesmo hit que o GA4 envia | Máxima — é o mesmo hit que chegou ao servidor |
 | **Latência** | Nenhuma — captura no momento do hit | Mínima — processamento server-side |
+| **Cobertura com sGTM ativo** | Limitada (ver "Limitações" abaixo) | Total |
 | **Instalação** | Simples, funciona em qualquer setup | Requer sGTM configurado com GA4 client |
 | **Custo extra** | Nenhum | Hosting do server container |
 
 **Use a versão web** se o cliente não tem server-side GTM ou quer começar rápido.
 
-**Use a versão server-side** se o cliente já tem sGTM ou quer o payload exato que o GA4 recebe no servidor.
+**Use a versão server-side** se o cliente já tem sGTM ou quer capturar 100% dos eventos sem depender de interceptação no browser.
 
 ---
 
@@ -31,41 +32,13 @@ Replica eventos do GA4 para um endpoint personalizado. Disponível em duas vers�
 
 A tag injeta um script externo (`sinatra.js`) no browser via `injectScript`. Esse script:
 
-1. Lê a configuração salva em `window.__sinatra` (account_id, token, measurement_id)
-2. Faz monkey-patch em `window.fetch` e `navigator.sendBeacon`
-3. Intercepta todas as requisições para `google-analytics.com/g/collect`
-4. Extrai os parâmetros do hit (URL + body)
-5. Envia para o endpoint Sinatra via POST no formato GA4 Measurement Protocol
+1. Lê a configuração salva em `window.__sinatra`
+2. Faz monkey-patch em `window.fetch`, `navigator.sendBeacon` e `XMLHttpRequest`
+3. Intercepta requisições para `/g/collect` com `tid=G-*` (qualquer endpoint GA4: `google-analytics.com` ou sGTM custom)
+4. Mergeia URL params + body URL-encoded → params object
+5. Encaminha como **GET** para `integrations.sinatra.pro/analytics/webhooks/events` com **todos os params do wire format intactos** + `account_id` e `token`
 
-### Campos capturados
-
-Por interceptar o hit diretamente, captura **todos** os campos que o GA4 envia — incluindo os coletados pelo browser que não estão no dataLayer:
-
-```json
-{
-  "client_id": "111111111.222222222",
-  "measurement_id": "G-XXXXXXXX",
-  "account_id": "seu-account-id",
-  "timestamp_micros": 1700000000000000,
-  "events": [{
-    "name": "purchase",
-    "params": {
-      "session_id": "1700000000",
-      "session_number": 3,
-      "page_location": "https://loja.com/checkout",
-      "page_referrer": "https://google.com",
-      "page_title": "Checkout",
-      "language": "pt-br",
-      "screen_resolution": "1920x1080",
-      "session_engaged": 1,
-      "transaction_id": "T123",
-      "value": 99.90,
-      "currency": "BRL",
-      "items": [...]
-    }
-  }]
-}
-```
+Zero transformação. O backend recebe o mesmo conjunto de chaves que o GA4 enviaria (`v`, `tid`, `cid`, `en`, `sid`, `sct`, `seg`, `dl`, `dr`, `dt`, `ul`, `sr`, `ep.*`, `epn.*`, `pr1.*`, `uap`, `uapv`, `ur`, `gcd`, `npa`, `dma`, `ecid`, etc.).
 
 ### Configuração
 
@@ -73,17 +46,26 @@ Por interceptar o hit diretamente, captura **todos** os campos que o GA4 envia �
 |---|---|---|
 | **Account ID** | Sim | Identificador da conta no Sinatra (ex: `metricasboss`) |
 | **Token** | Sim | Token de autenticação da conta |
-| **GA4 Measurement ID** | Não | Fallback caso o hit não contenha o campo `tid` (raro) |
+| **GA4 Measurement ID** | Não | Fallback caso o hit não contenha `tid` |
+| **Habilitar logs no console** | Não | Liga logs `[Sinatra]` detalhados (use só em debug; ver "Segurança") |
+| **Respeitar Google Consent Mode** | Não | Descarta hits com `analytics_storage=denied` antes de enviar — necessário se o site tem banner de consent (LGPD/GDPR) |
+| **Campos a excluir** | Não | Lista de campos a remover do wire format antes de enviar (data minimization). Aceita wildcard `*` no final |
 
 ### Trigger recomendado
 
-Configure para disparar em **Initialization - All Pages**. Isso garante que o monkey-patch esteja ativo antes de qualquer hit do GA4 ser enviado.
+**Initialization - All Pages.** O monkey-patch precisa estar ativo antes de qualquer hit do GA4 ser disparado.
 
-> **Importante:** Configure o trigger em Initialization, não em All Pages. O script precisa estar carregado antes do primeiro hit do GA4.
+> Configure em **Initialization**, não em All Pages — o script tem que estar carregado antes do primeiro hit.
 
 ### Como o script é carregado
 
-O `sinatra.js` é injetado uma única vez por página via `injectScript` (GTM faz cache por URL). A partir daí, qualquer hit do GA4 naquela página é automaticamente replicado para o Sinatra — sem precisar vincular o Sinatra aos mesmos triggers do GA4.
+O `sinatra.js` é injetado uma única vez por página via `injectScript` (GTM faz cache por URL). A partir daí, qualquer hit do GA4 naquela página é automaticamente replicado — sem precisar vincular o Sinatra aos mesmos triggers do GA4.
+
+### Limitações
+
+**Setups com `server_container_url` configurado (sGTM em first-party):** o Google injeta um `sw_iframe.html` cross-origin que envia os hits subsequentes a partir do origin do sGTM (`*.run.app` ou domínio customizado). Como o iframe roda numa origin diferente da página, nosso patch em `window.fetch` não alcança esses requests. Resultado: capturamos o primeiro `page_view` mas perdemos os hits de engajamento e ecommerce subsequentes.
+
+**Solução:** use a versão **server-side** quando o cliente tem sGTM.
 
 ---
 
@@ -91,60 +73,51 @@ O `sinatra.js` é injetado uma única vez por página via `injectScript` (GTM fa
 
 ### Como funciona
 
-Roda no server-side GTM container após o GA4 client processar o hit recebido do browser. Usa `getAllEventData()` para capturar o payload completo e envia via POST para o endpoint configurado.
-
-### Payload
-
-Mesmo formato GA4 Measurement Protocol, com `timestamp_micros` incluído e todos os campos disponíveis no evento server-side:
-
-```json
-{
-  "client_id": "111111111.222222222",
-  "measurement_id": "G-XXXXXXXX",
-  "account_id": "seu-account-id",
-  "timestamp_micros": 1700000000000000,
-  "events": [{
-    "name": "purchase",
-    "params": {
-      "event_name": "purchase",
-      "client_id": "111111111.222222222",
-      "currency": "BRL",
-      "value": 99.90,
-      "transaction_id": "T123",
-      "items": [...],
-      ...
-    }
-  }]
-}
-```
+Roda no server-side GTM container, dispara em todo evento que chega no client GA4 e captura o payload completo via `getAllEventData()`. Envia via POST para o endpoint.
 
 ### Configuração
 
 | Campo | Obrigatório | Descrição |
 |---|---|---|
-| **Account ID** | Sim | Identificador da conta no Sinatra (ex: `metricasboss`) |
-| **Token** | Sim | Token de autenticação da conta |
+| **Account ID** | Sim | Identificador da conta no Sinatra |
+| **Token** | Sim | Token de autenticação |
 | **GA4 Measurement ID** | Não | ID da propriedade GA4 (G-XXXXXXXX) |
 | **Request timeout (ms)** | Não | Timeout da requisição POST (padrão: 5000ms) |
 
 ### Pré-requisito
 
-O server-side GTM container precisa ter o **GA4 client** configurado para receber os hits do browser. O fluxo é:
+O server-side GTM container precisa ter o **GA4 client** configurado. Fluxo:
 
 ```
 Browser → sGTM container → GA4 client processa
-                         → Sinatra tag replica via POST → seu endpoint
+                         → Sinatra tag replica via POST → integrations.sinatra.pro
                          → GA4 tag encaminha para Google
 ```
 
-### Reenvio para o GA4
+---
 
-Como o payload já está no formato Measurement Protocol, seu servidor pode reencaminhar para o GA4 adicionando apenas o `api_secret`:
+## LGPD e privacidade
 
-```
-POST https://www.google-analytics.com/mp/collect?measurement_id=G-XXXX&api_secret=XXXX
-Body: { o mesmo payload recebido }
-```
+O Sinatra encaminha os mesmos dados que o GA4 coleta. Se você usa Sinatra, **você precisa**:
+
+1. Listar `integrations.sinatra.pro` como operador na sua política de privacidade
+2. Ter contrato de tratamento de dados (DPA) com a Métricas Boss
+3. Configurar consent + data minimization conforme finalidade
+
+### Configurações de compliance disponíveis no template
+
+**Respeitar Google Consent Mode** — quando ativo, hits com `gcs` indicando `analytics_storage=denied` (cookieless pings do Consent Mode v2) são descartados antes de chegar ao Sinatra. Habilite sempre que o site tiver banner de consent (OneTrust, Cookiebot, banner próprio, etc.).
+
+**Campos a excluir (data minimization)** — lista separada por vírgula, aceita wildcard `*` no final. Presets úteis:
+
+| Cenário | Lista sugerida |
+|---|---|
+| Reduzir fingerprinting | `uafvl, uaa, uab, uam, uamb, uap, uapv, uaw, sr` |
+| Tirar metadata do sGTM | `sst.*` |
+| Tirar enhanced conversions | `ecid` |
+| Anonimização agressiva | `uafvl, uaa, uab, uam, uamb, uap, uapv, uaw, sr, sst.*, ecid, _p, _s` |
+
+📄 **Documentação completa de privacidade:** [`docs/PRIVACY.md`](docs/PRIVACY.md) — catalogação de cada campo, bases legais, fluxo de direitos do titular e trecho pronto pra colar em política de privacidade.
 
 ---
 
@@ -153,22 +126,39 @@ Body: { o mesmo payload recebido }
 1. No GTM, vá em **Templates > Novo**
 2. Clique em **importar** e selecione o arquivo `.tpl` correspondente
 3. Salve o template
-4. Crie uma nova **Tag** usando o template instalado
+4. Crie uma nova **Tag** usando o template
 5. Configure os campos obrigatórios (Account ID e Token)
 6. Configure o trigger:
    - Web: **Initialization - All Pages**
    - Server-side: **All Events**
-7. Teste em **Preview Mode**
-8. Publique
+7. Em produção, **mantenha "Habilitar logs no console" desmarcado**
+8. Teste em **Preview Mode** (pode ligar o debug temporariamente)
+9. Publique
 
 ---
 
-## Segurança do endpoint receptor
+## Desenvolvimento
 
-O endpoint que receber os eventos deve:
-- Aceitar requisições POST com `Content-Type: application/json`
-- Validar o `account_id` e `token` nos query params
-- Usar HTTPS
+```bash
+# Testes (root)
+npm test
+
+# Build do bundle web
+cd inject-script
+npm run build
+
+# Deploy para S3 (precisa de credenciais AWS no .env)
+npm run deploy
+```
+
+Mais detalhes do inject-script em [`inject-script/readme.md`](inject-script/readme.md).
+
+---
+
+## Segurança
+
+- O `token` é transmitido como query param tanto na versão web (GET) quanto server-side (POST). Use HTTPS sempre, prefira tokens rotacionáveis curtos, e considere rate limit + IP allowlist no backend.
+- Em produção, deixe a opção "Habilitar logs no console" **desmarcada**. Quando marcada, URLs interceptadas do GA4 aparecem no DevTools — incluindo PII que esteja em `ep.*`.
 
 ---
 
