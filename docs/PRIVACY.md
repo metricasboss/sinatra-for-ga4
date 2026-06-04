@@ -118,13 +118,16 @@ Você (controlador) precisa atender solicitações de:
 
 O template expõe duas opções diretamente relacionadas à LGPD (em **Advanced Settings**):
 
-### 1. Respeitar Google Consent Mode
+### 1. Respeitar Google Consent Mode (ligado por padrão)
 
-Quando habilitado:
+**Default em ambas as versões (web e server-side):**
 - Hits com `gcs` indicando `analytics_storage=denied` (cookieless pings) são **descartados** antes de chegar ao Sinatra
-- Hits com consent granted seguem normalmente
+- Hits com consent granted ou sem `gcs` seguem normalmente
+- Vale para o script web (lê `params.gcs`) e para o template server-side (lê `eventData['x-ga-gcs']`)
 
-**Quando habilitar:** sempre que o site implementa um banner de cookies/consent (OneTrust, Cookiebot, Iubenda, banner próprio, etc.).
+**Só desmarque** se você tem base legal própria para análise (ex: legítimo interesse documentado, contrato com o titular) e o consentimento já é tratado em outra camada. Nesse caso, marque `requireConsent = false` explicitamente.
+
+**Implicação prática:** se o site usa Consent Mode v2 corretamente, esse gate cobre a maioria dos cenários LGPD/GDPR sem configuração adicional.
 
 ### 2. Campos a excluir (data minimization)
 
@@ -146,7 +149,7 @@ Lista separada por vírgula de campos a remover do payload antes de enviar. Acei
 - [ ] Listar `integrations.sinatra.pro` na sua **política de privacidade** como operador de dados
 - [ ] Ter um **contrato de tratamento de dados** assinado com o Sinatra (DPA)
 - [ ] Documentar a base legal usada para cada tipo de evento
-- [ ] Habilitar "Respeitar Google Consent Mode" se houver banner de consent
+- [x] "Respeitar Google Consent Mode" já vem **ligado por padrão** — confirme que está marcado nas tags
 - [ ] Configurar `excludeFields` para minimizar dados conforme finalidade
 - [ ] Documentar fluxo de eliminação por solicitação do titular
 - [ ] Se o servidor Sinatra processa dados fora do Brasil, garantir mecanismo de transferência internacional (cláusulas-padrão da ANPD, decisão de adequação, ou consentimento específico)

@@ -1,6 +1,6 @@
 'use strict';
 
-const { isGA4, parseQS, mergeParams } = require('./inject-script/sinatra');
+const { isGA4, parseQS, mergeParams, consentGranted, shouldExclude } = require('./inject-script/sinatra');
 
 describe('isGA4', () => {
   test('matches GA4 collect URL (google-analytics.com)', () => {
@@ -70,6 +70,33 @@ describe('mergeParams', () => {
   test('handles empty body', () => {
     const result = mergeParams('https://example.com/g/collect?cid=111', null);
     expect(result.cid).toBe('111');
+  });
+});
+
+describe('consentGranted', () => {
+  test('granted quando analytics_storage=1 (G111)', () => {
+    expect(consentGranted({ gcs: 'G111' })).toBe(true);
+  });
+  test('denied quando analytics_storage=0 (G100)', () => {
+    expect(consentGranted({ gcs: 'G100' })).toBe(false);
+  });
+  test('denied quando G110 (ad granted, analytics negado)', () => {
+    expect(consentGranted({ gcs: 'G110' })).toBe(false);
+  });
+  test('granted quando não há gcs no hit', () => {
+    expect(consentGranted({})).toBe(true);
+  });
+});
+
+describe('shouldExclude', () => {
+  test('match exato', () => {
+    expect(shouldExclude('cid', ['cid', 'uid'])).toBe(true);
+  });
+  test('wildcard com sufixo *', () => {
+    expect(shouldExclude('ep.user_id', ['ep.*'])).toBe(true);
+  });
+  test('não exclui o que não está na lista', () => {
+    expect(shouldExclude('en', ['cid'])).toBe(false);
   });
 });
 

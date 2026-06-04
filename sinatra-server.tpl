@@ -73,6 +73,14 @@ ___TEMPLATE_PARAMETERS___
         "simpleValueType": true,
         "defaultValue": "5000",
         "help": "Tempo máximo de espera pela resposta do endpoint, em milissegundos. Padrão: 5000."
+      },
+      {
+        "type": "CHECKBOX",
+        "name": "requireConsent",
+        "checkboxText": "Respeitar Google Consent Mode (LGPD/GDPR)",
+        "simpleValueType": true,
+        "defaultValue": true,
+        "help": "Ligado por padrão. Eventos cujo hit GA4 traz analytics_storage=denied (x-ga-gcs) são descartados antes de enviar pro Sinatra. Só desmarque se você tem base legal própria e trata o consentimento em outra camada."
       }
     ]
   }
@@ -97,6 +105,19 @@ if (!data.accountId || !data.token) {
 
 const eventData = getAllEventData();
 const timeout = data.requestTimeout ? parseInt(data.requestTimeout, 10) : 5000;
+
+// Consent gate (ligado por padrão; desliga com requireConsent === false explícito).
+// gcs vem no hit GA4 como x-ga-gcs no formato "G1XX", onde o índice 3 = analytics_storage
+// (0 = denied, 1 = granted). Ausência de gcs = trata como granted (mesma regra do client).
+function consentGranted(ed) {
+  const gcs = ed['x-ga-gcs'];
+  return !gcs || gcs.charAt(3) !== '0';
+}
+
+if (data.requireConsent !== false && !consentGranted(eventData)) {
+  logToConsole('Sinatra Server: consent denied (analytics_storage), skip:', eventData.event_name);
+  return data.gtmOnSuccess();
+}
 
 // Payload no formato GA4 Measurement Protocol público (/mp/collect)
 const mpPayload = {
@@ -286,6 +307,96 @@ scenarios:
 
     assertApi('gtmOnFailure').wasCalled();
     assertApi('sendHttpRequest').wasNotCalled();
+
+- name: Descarta evento quando analytics_storage=denied (x-ga-gcs=G100)
+  code: |
+    const mockData = {
+      accountId: 'metricasboss',
+      token: 'abc123token',
+      requireConsent: true,
+      gtmOnSuccess: function() {},
+      gtmOnFailure: function() {}
+    };
+
+    mock('getAllEventData', function() {
+      return {event_name: 'page_view', client_id: '111.222', 'x-ga-gcs': 'G100'};
+    });
+    mock('getTimestampMillis', function() { return 1700000000000; });
+    mock('sendHttpRequest', function() {});
+
+    runCode(mockData);
+
+    assertApi('sendHttpRequest').wasNotCalled();
+    assertApi('gtmOnSuccess').wasCalled();
+
+- name: Envia evento quando analytics_storage=granted (x-ga-gcs=G111)
+  code: |
+    const mockData = {
+      accountId: 'metricasboss',
+      token: 'abc123token',
+      requireConsent: true,
+      gtmOnSuccess: function() {},
+      gtmOnFailure: function() {}
+    };
+
+    mock('getAllEventData', function() {
+      return {event_name: 'purchase', client_id: '111.222', 'x-ga-gcs': 'G111'};
+    });
+    mock('getTimestampMillis', function() { return 1700000000000; });
+
+    let sentBody;
+    mock('sendHttpRequest', function(url, callback, options, body) {
+      sentBody = body;
+      callback(200, {}, '');
+    });
+
+    runCode(mockData);
+
+    assertApi('sendHttpRequest').wasCalled();
+    assertThat(sentBody).contains('purchase');
+    assertApi('gtmOnSuccess').wasCalled();
+
+- name: Envia quando não há gcs no hit (trata como granted)
+  code: |
+    const mockData = {
+      accountId: 'metricasboss',
+      token: 'abc123token',
+      requireConsent: true,
+      gtmOnSuccess: function() {},
+      gtmOnFailure: function() {}
+    };
+
+    mock('getAllEventData', function() {
+      return {event_name: 'page_view', client_id: '111.222'};
+    });
+    mock('getTimestampMillis', function() { return 1700000000000; });
+    mock('sendHttpRequest', function(url, callback) { callback(200, {}, ''); });
+
+    runCode(mockData);
+
+    assertApi('sendHttpRequest').wasCalled();
+    assertApi('gtmOnSuccess').wasCalled();
+
+- name: Envia mesmo com denied quando requireConsent=false (opt-out explícito)
+  code: |
+    const mockData = {
+      accountId: 'metricasboss',
+      token: 'abc123token',
+      requireConsent: false,
+      gtmOnSuccess: function() {},
+      gtmOnFailure: function() {}
+    };
+
+    mock('getAllEventData', function() {
+      return {event_name: 'page_view', client_id: '111.222', 'x-ga-gcs': 'G100'};
+    });
+    mock('getTimestampMillis', function() { return 1700000000000; });
+    mock('sendHttpRequest', function(url, callback) { callback(200, {}, ''); });
+
+    runCode(mockData);
+
+    assertApi('sendHttpRequest').wasCalled();
+    assertApi('gtmOnSuccess').wasCalled();
 
 
 ___NOTES___

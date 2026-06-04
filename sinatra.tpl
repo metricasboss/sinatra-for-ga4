@@ -78,7 +78,8 @@ ___TEMPLATE_PARAMETERS___
         "name": "requireConsent",
         "checkboxText": "Respeitar Google Consent Mode (LGPD/GDPR)",
         "simpleValueType": true,
-        "help": "Quando marcado, eventos com analytics_storage=denied (cookieless pings do Consent Mode) são descartados antes de enviar pro Sinatra. Recomendado se o site coleta consent."
+        "defaultValue": true,
+        "help": "Ligado por padrão. Eventos com analytics_storage=denied (cookieless pings do Consent Mode) são descartados antes de enviar pro Sinatra. Só desmarque se você tem base legal própria e trata o consentimento fora do GA4."
       },
       {
         "type": "TEXT",

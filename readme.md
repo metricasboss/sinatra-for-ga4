@@ -52,7 +52,7 @@ Zero transformação. O backend recebe o mesmo conjunto de chaves que o GA4 envi
 | **Token** | Sim | Token de autenticação da workspace |
 | **GA4 Measurement ID** | Não | Fallback caso o hit não contenha `tid` |
 | **Habilitar logs no console** | Não | Liga logs `[Sinatra]` detalhados (use só em debug; ver "Segurança") |
-| **Respeitar Google Consent Mode** | Não | Descarta hits com `analytics_storage=denied` antes de enviar — necessário se o site tem banner de consent (LGPD/GDPR) |
+| **Respeitar Google Consent Mode** | Não (default: **ligado**) | Descarta hits com `analytics_storage=denied` antes de enviar. Vem marcado por padrão; só desmarque se o consentimento é tratado em outra camada |
 | **Campos a excluir** | Não | Lista de campos a remover do wire format antes de enviar (data minimization). Aceita wildcard `*` no final |
 
 ### Trigger recomendado
@@ -87,6 +87,7 @@ Roda no server-side GTM container, dispara em todo evento que chega no client GA
 | **Token** | Sim | Token de autenticação |
 | **GA4 Measurement ID** | Não | ID da propriedade GA4 (G-XXXXXXXX) |
 | **Request timeout (ms)** | Não | Timeout da requisição POST (padrão: 5000ms) |
+| **Respeitar Google Consent Mode** | Não (default: **ligado**) | Descarta eventos com `x-ga-gcs` indicando `analytics_storage=denied`. Vem marcado por padrão; só desmarque se o consentimento é tratado em outra camada |
 
 ### Pré-requisito
 
@@ -110,7 +111,7 @@ Os mesmos dados que o GA4 coleta são também encaminhados pra sua workspace no 
 
 ### Configurações de compliance disponíveis no template
 
-**Respeitar Google Consent Mode** — quando ativo, hits com `gcs` indicando `analytics_storage=denied` (cookieless pings do Consent Mode v2) são descartados antes de chegar ao Sinatra. Habilite sempre que o site tiver banner de consent (OneTrust, Cookiebot, banner próprio, etc.).
+**Respeitar Google Consent Mode** — **ligado por padrão** nas duas versões (web e server-side). Hits com `gcs` (ou `x-ga-gcs` no server) indicando `analytics_storage=denied` são descartados antes de chegar ao Sinatra. Só desmarque se o consentimento é tratado em outra camada legal.
 
 **Campos a excluir (data minimization)** — lista separada por vírgula, aceita wildcard `*` no final. Presets úteis:
 

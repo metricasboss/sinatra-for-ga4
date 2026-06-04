@@ -45,7 +45,8 @@ function shouldExclude(key, list) {
 // Envia wire format GA4 como GET (para eventos interceptados da rede)
 function sendRaw(params, config) {
   var debug = config.debug === true;
-  if (config.requireConsent && !consentGranted(params)) {
+  // Consent gate ligado por padrão: só desliga com requireConsent === false explícito.
+  if (config.requireConsent !== false && !consentGranted(params)) {
     if (debug) console.log('[Sinatra] consent denied, skip:', params.en);
     return;
   }
@@ -140,5 +141,5 @@ function sendRaw(params, config) {
 })();
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { isGA4: isGA4, parseQS: parseQS, mergeParams: mergeParams, buildPayload: function() {} };
+  module.exports = { isGA4: isGA4, parseQS: parseQS, mergeParams: mergeParams, consentGranted: consentGranted, shouldExclude: shouldExclude, buildPayload: function() {} };
 }
