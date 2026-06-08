@@ -87,7 +87,7 @@ ___TEMPLATE_PARAMETERS___
 ]
 
 
-___SANDBOXED_JS_FOR_SERVER_TEMPLATE___
+___SANDBOXED_JS_FOR_SERVER___
 
 const getAllEventData = require('getAllEventData');
 const sendHttpRequest = require('sendHttpRequest');
