@@ -19,7 +19,7 @@ ___INFO___
     "displayName": "Métricas Boss",
     "thumbnail": "data:image/png;base64,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"
   },
-  "description": "Replica eventos do Google Analytics 4 para um endpoint personalizado via POST (server-side container).",
+  "description": "Forwarda o hit GA4 recebido pelo sGTM (verbatim, wire format) para a workspace do Sinatra. Captura via getRequestQueryParameters + getRequestBody — 1:1 com o que o navegador enviou.",
   "containerContexts": [
     "SERVER"
   ]
@@ -89,12 +89,12 @@ ___TEMPLATE_PARAMETERS___
 
 ___SANDBOXED_JS_FOR_SERVER___
 
-const getAllEventData = require('getAllEventData');
+const getRequestQueryParameters = require('getRequestQueryParameters');
+const getRequestBody = require('getRequestBody');
 const sendHttpRequest = require('sendHttpRequest');
-const JSON = require('JSON');
 const logToConsole = require('logToConsole');
-const getTimestampMillis = require('getTimestampMillis');
 const encodeUriComponent = require('encodeUriComponent');
+const decodeUriComponent = require('decodeUriComponent');
 const makeNumber = require('makeNumber');
 
 const ENDPOINT = 'https://integrations.sinatra.pro/analytics/webhooks/events';
@@ -104,41 +104,65 @@ if (!data.accountId || !data.token) {
   return data.gtmOnFailure();
 }
 
-const eventData = getAllEventData();
-const timeout = data.requestTimeout ? makeNumber(data.requestTimeout) : 5000;
+// Pega os params direto da requisição que chegou no sGTM (1:1 com o que o GA4 mandou).
+const urlParams = getRequestQueryParameters() || {};
 
-// Consent gate (ligado por padrão; desliga com requireConsent === false explícito).
-// gcs vem no hit GA4 como x-ga-gcs no formato "G1XX", onde o índice 3 = analytics_storage
-// (0 = denied, 1 = granted). Ausência de gcs = trata como granted (mesma regra do client).
-function consentGranted(ed) {
-  const gcs = ed['x-ga-gcs'];
-  return !gcs || gcs.charAt(3) !== '0';
+// Parse do body (alguns hits do GA4 vêm como POST com body URL-encoded — sendBeacon).
+function parseQS(str) {
+  const out = {};
+  if (!str) return out;
+  const s = str.charAt(0) === '?' ? str.slice(1) : str;
+  const pairs = s.split('&');
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i];
+    if (!pair) continue;
+    const eq = pair.indexOf('=');
+    if (eq === -1) {
+      out[decodeUriComponent(pair)] = '';
+    } else {
+      out[decodeUriComponent(pair.substring(0, eq))] = decodeUriComponent(pair.substring(eq + 1));
+    }
+  }
+  return out;
 }
 
-if (data.requireConsent !== false && !consentGranted(eventData)) {
-  logToConsole('Sinatra Server: consent denied (analytics_storage), skip:', eventData.event_name);
+const bodyParams = parseQS(getRequestBody());
+
+// Merge: body sobrescreve URL em caso de conflito (mesma regra do GA4 SDK).
+const params = {};
+for (const k in urlParams) params[k] = urlParams[k];
+for (const k in bodyParams) params[k] = bodyParams[k];
+
+// Confirma que é hit GA4 antes de forwardar.
+if (!params.tid || params.tid.indexOf('G-') !== 0) {
   return data.gtmOnSuccess();
 }
 
-// Payload no formato GA4 Measurement Protocol público (/mp/collect)
-const mpPayload = {
-  client_id: eventData.client_id || '',
-  timestamp_micros: getTimestampMillis() * 1000,
-  events: [{
-    name: eventData.event_name,
-    params: eventData
-  }]
-};
-
-if (data.measurementId) {
-  mpPayload.measurement_id = data.measurementId;
+// Consent gate (ligado por padrão; desliga com requireConsent === false explícito).
+// gcs vem no formato "G1XX", índice 3 = analytics_storage (0 = denied, 1 = granted).
+function consentGranted(p) {
+  return !p.gcs || p.gcs.charAt(3) !== '0';
 }
 
-logToConsole('Sinatra Server payload:', mpPayload);
+if (data.requireConsent !== false && !consentGranted(params)) {
+  logToConsole('Sinatra Server: consent denied (analytics_storage), skip:', params.en);
+  return data.gtmOnSuccess();
+}
+
+// Reconstrói a query string verbatim — todos os params do hit original.
+const parts = [];
+for (const k in params) {
+  parts.push(encodeUriComponent(k) + '=' + encodeUriComponent(params[k]));
+}
 
 const url = ENDPOINT +
   '?account_id=' + encodeUriComponent(data.accountId) +
-  '&token=' + encodeUriComponent(data.token);
+  '&token=' + encodeUriComponent(data.token) +
+  '&' + parts.join('&');
+
+const timeout = data.requestTimeout ? makeNumber(data.requestTimeout) : 5000;
+
+logToConsole('Sinatra Server: forwarding', params.en, '| qs params:', parts.length);
 
 sendHttpRequest(
   url,
@@ -151,11 +175,9 @@ sendHttpRequest(
     }
   },
   {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    method: 'GET',
     timeout: timeout
-  },
-  JSON.stringify(mpPayload)
+  }
 );
 
 
@@ -186,18 +208,35 @@ ___SERVER_PERMISSIONS___
   {
     "instance": {
       "key": {
-        "publicId": "read_event_data",
+        "publicId": "read_request",
         "versionId": "1"
       },
       "param": [
         {
-          "key": "eventDataAccess",
+          "key": "queryParameterAccess",
           "value": {
             "type": 1,
             "string": "any"
           }
+        },
+        {
+          "key": "headerAccess",
+          "value": {
+            "type": 1,
+            "string": "specific"
+          }
+        },
+        {
+          "key": "requestAccess",
+          "value": {
+            "type": 1,
+            "string": "specific"
+          }
         }
       ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
     },
     "isRequired": true
   },
@@ -228,34 +267,36 @@ ___SERVER_PERMISSIONS___
 ___TESTS___
 
 scenarios:
-- name: Envia evento via POST com account_id e token na URL
+- name: Forwarda hit GA4 verbatim como GET pra Sinatra
   code: |
     const mockData = {
       accountId: 'metricasboss',
       token: 'abc123token',
-      measurementId: 'G-TEST123',
       requestTimeout: '5000',
       gtmOnSuccess: function() {},
       gtmOnFailure: function() {}
     };
 
-    mock('getAllEventData', function() {
+    mock('getRequestQueryParameters', function() {
       return {
-        event_name: 'purchase',
-        client_id: '111111111.222222222',
-        currency: 'BRL',
-        value: 99.90,
-        transaction_id: 'T123'
+        v: '2',
+        tid: 'G-TEST123',
+        cid: '111.222',
+        en: 'purchase',
+        sid: '1700000000',
+        sct: '3',
+        dl: 'https://example.com/checkout',
+        gcs: 'G111',
+        'ep.transaction_id': 'T123',
+        'epn.value': '99.9'
       };
     });
+    mock('getRequestBody', function() { return ''; });
 
-    mock('getTimestampMillis', function() { return 1700000000000; });
-
-    let sentUrl, sentBody, sentOptions;
-    mock('sendHttpRequest', function(url, callback, options, body) {
+    let sentUrl, sentOptions;
+    mock('sendHttpRequest', function(url, callback, options) {
       sentUrl = url;
       sentOptions = options;
-      sentBody = body;
       callback(200, {}, '');
     });
 
@@ -264,10 +305,60 @@ scenarios:
     assertApi('sendHttpRequest').wasCalled();
     assertThat(sentUrl).contains('account_id=metricasboss');
     assertThat(sentUrl).contains('token=abc123token');
-    assertThat(sentOptions.method).isEqualTo('POST');
-    assertThat(sentBody).contains('purchase');
-    assertThat(sentBody).contains('T123');
-    assertThat(sentBody).contains('client_id');
+    assertThat(sentUrl).contains('tid=G-TEST123');
+    assertThat(sentUrl).contains('en=purchase');
+    assertThat(sentUrl).contains('ep.transaction_id=T123');
+    assertThat(sentOptions.method).isEqualTo('GET');
+    assertApi('gtmOnSuccess').wasCalled();
+
+- name: Mergeia URL params + body URL-encoded (POST/sendBeacon)
+  code: |
+    const mockData = {
+      accountId: 'metricasboss',
+      token: 'abc123token',
+      gtmOnSuccess: function() {},
+      gtmOnFailure: function() {}
+    };
+
+    mock('getRequestQueryParameters', function() {
+      return {v: '2', tid: 'G-TEST123', cid: '111.222'};
+    });
+    mock('getRequestBody', function() {
+      return 'en=add_to_cart&pr1.id=SKU001&pr1.nm=Produto%20Um';
+    });
+
+    let sentUrl;
+    mock('sendHttpRequest', function(url, callback) {
+      sentUrl = url;
+      callback(200, {}, '');
+    });
+
+    runCode(mockData);
+
+    assertApi('sendHttpRequest').wasCalled();
+    assertThat(sentUrl).contains('en=add_to_cart');
+    assertThat(sentUrl).contains('pr1.id=SKU001');
+    assertThat(sentUrl).contains('pr1.nm=Produto');
+    assertApi('gtmOnSuccess').wasCalled();
+
+- name: Ignora request que não é GA4 (sem tid=G-)
+  code: |
+    const mockData = {
+      accountId: 'metricasboss',
+      token: 'abc123token',
+      gtmOnSuccess: function() {},
+      gtmOnFailure: function() {}
+    };
+
+    mock('getRequestQueryParameters', function() {
+      return {v: '2', en: 'something'};
+    });
+    mock('getRequestBody', function() { return ''; });
+    mock('sendHttpRequest', function() {});
+
+    runCode(mockData);
+
+    assertApi('sendHttpRequest').wasNotCalled();
     assertApi('gtmOnSuccess').wasCalled();
 
 - name: Chama gtmOnFailure em erro HTTP
@@ -279,11 +370,11 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
-    mock('getAllEventData', function() {
-      return {event_name: 'page_view', client_id: '111.222'};
+    mock('getRequestQueryParameters', function() {
+      return {tid: 'G-TEST', cid: '111', en: 'page_view'};
     });
-    mock('getTimestampMillis', function() { return 1700000000000; });
-    mock('sendHttpRequest', function(url, callback, options, body) {
+    mock('getRequestBody', function() { return ''; });
+    mock('sendHttpRequest', function(url, callback) {
       callback(500, {}, 'Internal Server Error');
     });
 
@@ -301,7 +392,6 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
-    mock('getAllEventData', function() { return {}; });
     mock('sendHttpRequest', function() {});
 
     runCode(mockData);
@@ -309,7 +399,7 @@ scenarios:
     assertApi('gtmOnFailure').wasCalled();
     assertApi('sendHttpRequest').wasNotCalled();
 
-- name: Descarta evento quando analytics_storage=denied (x-ga-gcs=G100)
+- name: Descarta hit quando analytics_storage=denied (gcs=G100)
   code: |
     const mockData = {
       accountId: 'metricasboss',
@@ -319,10 +409,10 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
-    mock('getAllEventData', function() {
-      return {event_name: 'page_view', client_id: '111.222', 'x-ga-gcs': 'G100'};
+    mock('getRequestQueryParameters', function() {
+      return {tid: 'G-TEST', cid: '111', en: 'page_view', gcs: 'G100'};
     });
-    mock('getTimestampMillis', function() { return 1700000000000; });
+    mock('getRequestBody', function() { return ''; });
     mock('sendHttpRequest', function() {});
 
     runCode(mockData);
@@ -330,7 +420,7 @@ scenarios:
     assertApi('sendHttpRequest').wasNotCalled();
     assertApi('gtmOnSuccess').wasCalled();
 
-- name: Envia evento quando analytics_storage=granted (x-ga-gcs=G111)
+- name: Envia hit quando analytics_storage=granted (gcs=G111)
   code: |
     const mockData = {
       accountId: 'metricasboss',
@@ -340,21 +430,15 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
-    mock('getAllEventData', function() {
-      return {event_name: 'purchase', client_id: '111.222', 'x-ga-gcs': 'G111'};
+    mock('getRequestQueryParameters', function() {
+      return {tid: 'G-TEST', cid: '111', en: 'purchase', gcs: 'G111'};
     });
-    mock('getTimestampMillis', function() { return 1700000000000; });
-
-    let sentBody;
-    mock('sendHttpRequest', function(url, callback, options, body) {
-      sentBody = body;
-      callback(200, {}, '');
-    });
+    mock('getRequestBody', function() { return ''; });
+    mock('sendHttpRequest', function(url, callback) { callback(200, {}, ''); });
 
     runCode(mockData);
 
     assertApi('sendHttpRequest').wasCalled();
-    assertThat(sentBody).contains('purchase');
     assertApi('gtmOnSuccess').wasCalled();
 
 - name: Envia quando não há gcs no hit (trata como granted)
@@ -367,10 +451,10 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
-    mock('getAllEventData', function() {
-      return {event_name: 'page_view', client_id: '111.222'};
+    mock('getRequestQueryParameters', function() {
+      return {tid: 'G-TEST', cid: '111', en: 'page_view'};
     });
-    mock('getTimestampMillis', function() { return 1700000000000; });
+    mock('getRequestBody', function() { return ''; });
     mock('sendHttpRequest', function(url, callback) { callback(200, {}, ''); });
 
     runCode(mockData);
@@ -378,7 +462,7 @@ scenarios:
     assertApi('sendHttpRequest').wasCalled();
     assertApi('gtmOnSuccess').wasCalled();
 
-- name: Envia mesmo com denied quando requireConsent=false (opt-out explícito)
+- name: Envia mesmo com denied quando requireConsent=false
   code: |
     const mockData = {
       accountId: 'metricasboss',
@@ -388,10 +472,10 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
-    mock('getAllEventData', function() {
-      return {event_name: 'page_view', client_id: '111.222', 'x-ga-gcs': 'G100'};
+    mock('getRequestQueryParameters', function() {
+      return {tid: 'G-TEST', cid: '111', en: 'page_view', gcs: 'G100'};
     });
-    mock('getTimestampMillis', function() { return 1700000000000; });
+    mock('getRequestBody', function() { return ''; });
     mock('sendHttpRequest', function(url, callback) { callback(200, {}, ''); });
 
     runCode(mockData);

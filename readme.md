@@ -14,11 +14,11 @@ Disponível em duas versões: **web** (client-side) e **server-side**.
 
 | | Web (`sinatra.tpl`) | Server-Side (`sinatra-server.tpl`) |
 |---|---|---|
-| **Método de envio para o Sinatra** | GET com wire format na query string | POST JSON via `sendHttpRequest` |
+| **Método de envio para o Sinatra** | GET com wire format na query string | GET com wire format na query string |
 | **Requisito** | Qualquer container web GTM | Server-side GTM container |
-| **Como funciona** | Monkey-patch em `window.fetch` / `navigator.sendBeacon` / `XMLHttpRequest` para interceptar hits `/g/collect` | Recebe o evento no client GA4 do sGTM e encaminha o payload |
-| **Dados capturados** | Wire format bruto do GA4 (todos os params da URL + body) | Payload completo via `getAllEventData()` |
-| **Fidelidade ao GA4** | Máxima — é o mesmo hit que o GA4 envia | Máxima — é o mesmo hit que chegou ao servidor |
+| **Como funciona** | Monkey-patch em `window.fetch` / `navigator.sendBeacon` / `XMLHttpRequest` para interceptar hits `/g/collect` | Lê o request HTTP que chegou no sGTM via `getRequestQueryParameters` + `getRequestBody` e forwarda verbatim |
+| **Dados capturados** | Wire format bruto do GA4 (todos os params da URL + body) | Mesmo wire format que chegou ao sGTM — 1:1 com o que o browser enviou |
+| **Fidelidade ao GA4** | Máxima — é o mesmo hit que o GA4 envia | Máxima — é o request que o sGTM recebeu, antes do parsing |
 | **Latência** | Nenhuma — captura no momento do hit | Mínima — processamento server-side |
 | **Cobertura com sGTM ativo** | Limitada (ver "Limitações" abaixo) | Total |
 | **Instalação** | Simples, funciona em qualquer setup | Requer sGTM configurado com GA4 client |
@@ -77,7 +77,7 @@ O `sinatra.js` é injetado uma única vez por página via `injectScript` (GTM fa
 
 ### Como funciona
 
-Roda no server-side GTM container, dispara em todo evento que chega no client GA4 e captura o payload completo via `getAllEventData()`. Envia via POST para o endpoint.
+Roda no server-side GTM container e lê o request HTTP **original** que o browser enviou (via `getRequestQueryParameters()` + `getRequestBody()`), antes do GA4 client parsear/normalizar. Forwarda o conjunto de params verbatim como **GET** para o Sinatra. Sem reconstrução, sem mapeamento, sem perda de campos — chega exatamente o mesmo wire format que o GA4 receberia.
 
 ### Configuração
 
