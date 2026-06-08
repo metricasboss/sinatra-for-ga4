@@ -213,7 +213,7 @@ ___SERVER_PERMISSIONS___
       },
       "param": [
         {
-          "key": "queryParameterAccess",
+          "key": "requestAccess",
           "value": {
             "type": 1,
             "string": "any"
@@ -223,14 +223,14 @@ ___SERVER_PERMISSIONS___
           "key": "headerAccess",
           "value": {
             "type": 1,
-            "string": "specific"
+            "string": "any"
           }
         },
         {
-          "key": "requestAccess",
+          "key": "queryParameterAccess",
           "value": {
             "type": 1,
-            "string": "specific"
+            "string": "any"
           }
         }
       ]
