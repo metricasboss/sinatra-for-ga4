@@ -95,6 +95,7 @@ const JSON = require('JSON');
 const logToConsole = require('logToConsole');
 const getTimestampMillis = require('getTimestampMillis');
 const encodeUriComponent = require('encodeUriComponent');
+const makeNumber = require('makeNumber');
 
 const ENDPOINT = 'https://integrations.sinatra.pro/analytics/webhooks/events';
 
@@ -104,7 +105,7 @@ if (!data.accountId || !data.token) {
 }
 
 const eventData = getAllEventData();
-const timeout = data.requestTimeout ? parseInt(data.requestTimeout, 10) : 5000;
+const timeout = data.requestTimeout ? makeNumber(data.requestTimeout) : 5000;
 
 // Consent gate (ligado por padrão; desliga com requireConsent === false explícito).
 // gcs vem no hit GA4 como x-ga-gcs no formato "G1XX", onde o índice 3 = analytics_storage
