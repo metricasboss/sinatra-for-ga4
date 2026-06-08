@@ -89,12 +89,13 @@ ___TEMPLATE_PARAMETERS___
 
 ___SANDBOXED_JS_FOR_SERVER___
 
+const getRequestMethod = require('getRequestMethod');
 const getRequestQueryParameters = require('getRequestQueryParameters');
 const getRequestBody = require('getRequestBody');
+const getRequestHeader = require('getRequestHeader');
 const sendHttpRequest = require('sendHttpRequest');
 const logToConsole = require('logToConsole');
 const encodeUriComponent = require('encodeUriComponent');
-const decodeUriComponent = require('decodeUriComponent');
 const makeNumber = require('makeNumber');
 
 const ENDPOINT = 'https://integrations.sinatra.pro/analytics/webhooks/events';
@@ -104,37 +105,13 @@ if (!data.accountId || !data.token) {
   return data.gtmOnFailure();
 }
 
-// Pega os params direto da requisição que chegou no sGTM (1:1 com o que o GA4 mandou).
+// Captura o request original verbatim: método, params da URL, body e content-type.
+const method = getRequestMethod();
 const urlParams = getRequestQueryParameters() || {};
+const body = getRequestBody();
 
-// Parse do body (alguns hits do GA4 vêm como POST com body URL-encoded — sendBeacon).
-function parseQS(str) {
-  const out = {};
-  if (!str) return out;
-  const s = str.charAt(0) === '?' ? str.slice(1) : str;
-  const pairs = s.split('&');
-  for (let i = 0; i < pairs.length; i++) {
-    const pair = pairs[i];
-    if (!pair) continue;
-    const eq = pair.indexOf('=');
-    if (eq === -1) {
-      out[decodeUriComponent(pair)] = '';
-    } else {
-      out[decodeUriComponent(pair.substring(0, eq))] = decodeUriComponent(pair.substring(eq + 1));
-    }
-  }
-  return out;
-}
-
-const bodyParams = parseQS(getRequestBody());
-
-// Merge: body sobrescreve URL em caso de conflito (mesma regra do GA4 SDK).
-const params = {};
-for (const k in urlParams) params[k] = urlParams[k];
-for (const k in bodyParams) params[k] = bodyParams[k];
-
-// Confirma que é hit GA4 antes de forwardar.
-if (!params.tid || params.tid.indexOf('G-') !== 0) {
+// Confirma que é hit GA4 (tid=G-...) antes de forwardar.
+if (!urlParams.tid || urlParams.tid.indexOf('G-') !== 0) {
   return data.gtmOnSuccess();
 }
 
@@ -144,40 +121,49 @@ function consentGranted(p) {
   return !p.gcs || p.gcs.charAt(3) !== '0';
 }
 
-if (data.requireConsent !== false && !consentGranted(params)) {
-  logToConsole('Sinatra Server: consent denied (analytics_storage), skip:', params.en);
+if (data.requireConsent !== false && !consentGranted(urlParams)) {
+  logToConsole('Sinatra Server: consent denied (analytics_storage), skip:', urlParams.en);
   return data.gtmOnSuccess();
 }
 
-// Reconstrói a query string verbatim — todos os params do hit original.
+// Reconstrói a query string verbatim com os params da URL original.
 const parts = [];
-for (const k in params) {
-  parts.push(encodeUriComponent(k) + '=' + encodeUriComponent(params[k]));
+for (const k in urlParams) {
+  parts.push(encodeUriComponent(k) + '=' + encodeUriComponent(urlParams[k]));
 }
 
 const url = ENDPOINT +
   '?account_id=' + encodeUriComponent(data.accountId) +
   '&token=' + encodeUriComponent(data.token) +
-  '&' + parts.join('&');
+  (parts.length ? '&' + parts.join('&') : '');
 
 const timeout = data.requestTimeout ? makeNumber(data.requestTimeout) : 5000;
 
-logToConsole('Sinatra Server: forwarding', params.en, '| qs params:', parts.length);
+// Espelha o método e o body do hit original. Para POST, preserva o Content-Type.
+const options = {
+  method: method,
+  timeout: timeout,
+  headers: {}
+};
+if (method !== 'GET' && body) {
+  const ct = getRequestHeader('content-type');
+  if (ct) options.headers['Content-Type'] = ct;
+}
+
+logToConsole('Sinatra Server: forwarding', urlParams.en, '| method:', method, '| body:', body ? body.length : 0);
 
 sendHttpRequest(
   url,
-  function(statusCode, headers, body) {
+  function(statusCode, headers, respBody) {
     if (statusCode >= 200 && statusCode < 300) {
       data.gtmOnSuccess();
     } else {
-      logToConsole('Sinatra Server: erro HTTP ' + statusCode + ' - ' + body);
+      logToConsole('Sinatra Server: erro HTTP ' + statusCode + ' - ' + respBody);
       data.gtmOnFailure();
     }
   },
-  {
-    method: 'GET',
-    timeout: timeout
-  }
+  options,
+  body || undefined
 );
 
 
@@ -267,7 +253,7 @@ ___SERVER_PERMISSIONS___
 ___TESTS___
 
 scenarios:
-- name: Forwarda hit GA4 verbatim como GET pra Sinatra
+- name: Espelha GET quando hit original é GET
   code: |
     const mockData = {
       accountId: 'metricasboss',
@@ -277,26 +263,18 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
+    mock('getRequestMethod', function() { return 'GET'; });
     mock('getRequestQueryParameters', function() {
-      return {
-        v: '2',
-        tid: 'G-TEST123',
-        cid: '111.222',
-        en: 'purchase',
-        sid: '1700000000',
-        sct: '3',
-        dl: 'https://example.com/checkout',
-        gcs: 'G111',
-        'ep.transaction_id': 'T123',
-        'epn.value': '99.9'
-      };
+      return {v: '2', tid: 'G-TEST123', cid: '111.222', en: 'page_view'};
     });
     mock('getRequestBody', function() { return ''; });
+    mock('getRequestHeader', function() { return ''; });
 
-    let sentUrl, sentOptions;
-    mock('sendHttpRequest', function(url, callback, options) {
+    let sentUrl, sentOptions, sentBody;
+    mock('sendHttpRequest', function(url, callback, options, body) {
       sentUrl = url;
       sentOptions = options;
+      sentBody = body;
       callback(200, {}, '');
     });
 
@@ -306,12 +284,11 @@ scenarios:
     assertThat(sentUrl).contains('account_id=metricasboss');
     assertThat(sentUrl).contains('token=abc123token');
     assertThat(sentUrl).contains('tid=G-TEST123');
-    assertThat(sentUrl).contains('en=purchase');
-    assertThat(sentUrl).contains('ep.transaction_id=T123');
+    assertThat(sentUrl).contains('en=page_view');
     assertThat(sentOptions.method).isEqualTo('GET');
     assertApi('gtmOnSuccess').wasCalled();
 
-- name: Mergeia URL params + body URL-encoded (POST/sendBeacon)
+- name: Espelha POST quando hit original é POST (com body verbatim)
   code: |
     const mockData = {
       accountId: 'metricasboss',
@@ -320,25 +297,30 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
+    mock('getRequestMethod', function() { return 'POST'; });
     mock('getRequestQueryParameters', function() {
-      return {v: '2', tid: 'G-TEST123', cid: '111.222'};
+      return {v: '2', tid: 'G-TEST123', cid: '111.222', en: 'add_to_cart'};
     });
-    mock('getRequestBody', function() {
-      return 'en=add_to_cart&pr1.id=SKU001&pr1.nm=Produto%20Um';
+    const originalBody = 'pr1.id=SKU001&pr1.nm=Produto%20Um&epn.value=49.9';
+    mock('getRequestBody', function() { return originalBody; });
+    mock('getRequestHeader', function(name) {
+      if (name === 'content-type') return 'text/plain;charset=UTF-8';
+      return '';
     });
 
-    let sentUrl;
-    mock('sendHttpRequest', function(url, callback) {
-      sentUrl = url;
+    let sentOptions, sentBody;
+    mock('sendHttpRequest', function(url, callback, options, body) {
+      sentOptions = options;
+      sentBody = body;
       callback(200, {}, '');
     });
 
     runCode(mockData);
 
     assertApi('sendHttpRequest').wasCalled();
-    assertThat(sentUrl).contains('en=add_to_cart');
-    assertThat(sentUrl).contains('pr1.id=SKU001');
-    assertThat(sentUrl).contains('pr1.nm=Produto');
+    assertThat(sentOptions.method).isEqualTo('POST');
+    assertThat(sentBody).isEqualTo(originalBody);
+    assertThat(sentOptions.headers['Content-Type']).isEqualTo('text/plain;charset=UTF-8');
     assertApi('gtmOnSuccess').wasCalled();
 
 - name: Ignora request que não é GA4 (sem tid=G-)
@@ -350,10 +332,12 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
+    mock('getRequestMethod', function() { return 'GET'; });
     mock('getRequestQueryParameters', function() {
       return {v: '2', en: 'something'};
     });
     mock('getRequestBody', function() { return ''; });
+    mock('getRequestHeader', function() { return ''; });
     mock('sendHttpRequest', function() {});
 
     runCode(mockData);
@@ -370,10 +354,12 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
+    mock('getRequestMethod', function() { return 'GET'; });
     mock('getRequestQueryParameters', function() {
       return {tid: 'G-TEST', cid: '111', en: 'page_view'};
     });
     mock('getRequestBody', function() { return ''; });
+    mock('getRequestHeader', function() { return ''; });
     mock('sendHttpRequest', function(url, callback) {
       callback(500, {}, 'Internal Server Error');
     });
@@ -409,10 +395,12 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
+    mock('getRequestMethod', function() { return 'GET'; });
     mock('getRequestQueryParameters', function() {
       return {tid: 'G-TEST', cid: '111', en: 'page_view', gcs: 'G100'};
     });
     mock('getRequestBody', function() { return ''; });
+    mock('getRequestHeader', function() { return ''; });
     mock('sendHttpRequest', function() {});
 
     runCode(mockData);
@@ -430,10 +418,12 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
+    mock('getRequestMethod', function() { return 'GET'; });
     mock('getRequestQueryParameters', function() {
       return {tid: 'G-TEST', cid: '111', en: 'purchase', gcs: 'G111'};
     });
     mock('getRequestBody', function() { return ''; });
+    mock('getRequestHeader', function() { return ''; });
     mock('sendHttpRequest', function(url, callback) { callback(200, {}, ''); });
 
     runCode(mockData);
@@ -451,10 +441,12 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
+    mock('getRequestMethod', function() { return 'GET'; });
     mock('getRequestQueryParameters', function() {
       return {tid: 'G-TEST', cid: '111', en: 'page_view'};
     });
     mock('getRequestBody', function() { return ''; });
+    mock('getRequestHeader', function() { return ''; });
     mock('sendHttpRequest', function(url, callback) { callback(200, {}, ''); });
 
     runCode(mockData);
@@ -472,10 +464,12 @@ scenarios:
       gtmOnFailure: function() {}
     };
 
+    mock('getRequestMethod', function() { return 'GET'; });
     mock('getRequestQueryParameters', function() {
       return {tid: 'G-TEST', cid: '111', en: 'page_view', gcs: 'G100'};
     });
     mock('getRequestBody', function() { return ''; });
+    mock('getRequestHeader', function() { return ''; });
     mock('sendHttpRequest', function(url, callback) { callback(200, {}, ''); });
 
     runCode(mockData);
