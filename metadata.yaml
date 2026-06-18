@@ -1,0 +1,5 @@
+homepage: "https://metricasboss.com.br"
+documentation: "https://github.com/metricasboss/sinatra-for-ga4"
+versions:
+  - sha: 1d21b19bbaaf32ea47dcd79b92b9902158d65ae4
+    changeNotes: Initial release.
