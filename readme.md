@@ -12,7 +12,7 @@ Disponível em duas versões: **web** (client-side) e **server-side**.
 
 ## Qual versão usar?
 
-| | Web (`sinatra.tpl`) | Server-Side (`sinatra-server.tpl`) |
+| | Web (`template.tpl`) | Server-Side (`sinatra-server.tpl`) |
 |---|---|---|
 | **Método de envio para o Sinatra** | GET com wire format na query string | GET com wire format na query string |
 | **Requisito** | Qualquer container web GTM | Server-side GTM container |
@@ -30,7 +30,7 @@ Disponível em duas versões: **web** (client-side) e **server-side**.
 
 ---
 
-## Versão Web — `sinatra.tpl`
+## Versão Web — `template.tpl`
 
 ### Como funciona
 
