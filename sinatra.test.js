@@ -99,4 +99,3 @@ describe('shouldExclude', () => {
     expect(shouldExclude('en', ['cid'])).toBe(false);
   });
 });
-

@@ -1,67 +1,38 @@
-var GA4_PATH = '/g/collect';
+var params = require('./params');
+var isGA4Path = params.isGA4Path;
+var isGA4 = params.isGA4;
+var mergeParamsBatch = params.mergeParamsBatch;
+var consentGranted = params.consentGranted;
+var shouldExclude = params.shouldExclude;
+
 var ENDPOINT = 'https://integrations.sinatra.pro/analytics/webhooks/events';
 
-function isGA4Path(url) { return typeof url === 'string' && url.indexOf(GA4_PATH) !== -1; }
-function isGA4(url) { return isGA4Path(url) && url.indexOf('tid=G-') !== -1; }
-
-function parseQS(str) {
-  var out = {};
-  if (!str) return out;
-  var s = str.charAt(0) === '?' ? str.slice(1) : str;
-  s.split('&').forEach(function (pair) {
-    if (!pair) return;
-    var eq = pair.indexOf('=');
-    if (eq === -1) { out[decodeURIComponent(pair)] = ''; return; }
-    var k = decodeURIComponent(pair.slice(0, eq));
-    var v = decodeURIComponent(pair.slice(eq + 1).replace(/\+/g, ' '));
-    out[k] = v;
-  });
-  return out;
-}
-
-function parseBody(body) { return body && typeof body === 'string' ? parseQS(body) : {}; }
-
-function mergeParams(url, body) {
-  var qi = url.indexOf('?');
-  var merged = qi !== -1 ? parseQS(url.slice(qi + 1)) : {};
-  var bodyParams = parseBody(body);
-  for (var k in bodyParams) merged[k] = bodyParams[k];
-  return merged;
-}
-
-// gcs format: G1XX onde index 3 = analytics_storage (0=denied, 1=granted)
-function consentGranted(params) {
-  return !params.gcs || params.gcs.charAt(3) !== '0';
-}
-
-function shouldExclude(key, list) {
-  for (var i = 0; i < list.length; i++) {
-    var p = list[i];
-    if (key === p || (p.slice(-1) === '*' && key.indexOf(p.slice(0, -1)) === 0)) return true;
-  }
-  return false;
-}
-
 // Envia wire format GA4 como GET (para eventos interceptados da rede)
-function sendRaw(params, config) {
+function sendRaw(hitParams, config) {
   var debug = config.debug === true;
   // Consent gate ligado por padrão: só desliga com requireConsent === false explícito.
-  if (config.requireConsent !== false && !consentGranted(params)) {
-    if (debug) console.log('[Sinatra] consent denied, skip:', params.en);
+  if (config.requireConsent !== false && !consentGranted(hitParams)) {
+    if (debug) console.log('[Sinatra] consent denied, skip:', hitParams.en);
     return;
   }
   var ex = config.excludeFields || [];
   var qs = '?account_id=' + encodeURIComponent(config.accountId)
          + '&token=' + encodeURIComponent(config.token);
-  for (var k in params) {
+  for (var k in hitParams) {
     if (ex.length && shouldExclude(k, ex)) continue;
-    qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    qs += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(hitParams[k]);
   }
-  var en = params['en'] || 'unknown';
+  var en = hitParams['en'] || 'unknown';
   if (debug) console.log('[Sinatra] enviando (raw):', en);
   fetch(ENDPOINT + qs, { method: 'GET', keepalive: true })
     .then(function (r) { if (debug) console.log('[Sinatra] ✅ status:', r.status, '| evento:', en); })
     .catch(function (e) { console.error('[Sinatra] ❌ erro:', e); });
+}
+
+function sendBatch(batch, config) {
+  for (var bi = 0; bi < batch.length; bi++) {
+    try { sendRaw(batch[bi], config); } catch (e) { console.error('[Sinatra] erro ao enviar hit:', e); }
+  }
 }
 
 // Browser auto-init
@@ -92,8 +63,7 @@ function sendRaw(params, config) {
       if (isGA4(url)) {
         log('[Sinatra] 🎯 GA4 via fetch:', url);
         var bodyStr = (init && typeof init.body === 'string') ? init.body : null;
-        var params = mergeParams(url, bodyStr);
-        try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro fetch intercept:', e); }
+        sendBatch(mergeParamsBatch(url, bodyStr), config);
       }
       return _fetch.apply(this, arguments);
     };
@@ -102,10 +72,11 @@ function sendRaw(params, config) {
 
   // === sendBeacon intercept ===
   function handleBeacon(urlStr, bodyStr) {
-    var params = mergeParams(urlStr, bodyStr);
-    if (!params.tid || params.tid.indexOf('G-') !== 0) return;
+    var batch = mergeParamsBatch(urlStr, bodyStr);
+    var first = batch[0];
+    if (!first.tid || first.tid.indexOf('G-') !== 0) return;
     log('[Sinatra] 🎯 GA4 via sendBeacon:', urlStr);
-    try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro sendBeacon intercept:', e); }
+    sendBatch(batch, config);
   }
   var _sendBeacon = navigator.sendBeacon ? navigator.sendBeacon.bind(navigator) : null;
   if (_sendBeacon) {
@@ -131,8 +102,7 @@ function sendRaw(params, config) {
     var url = this._sinatraUrl || '';
     if (isGA4(url)) {
       log('[Sinatra] 🎯 GA4 via XHR:', url);
-      var params = mergeParams(url, typeof body === 'string' ? body : null);
-      try { sendRaw(params, config); } catch (e) { console.error('[Sinatra] erro XHR intercept:', e); }
+      sendBatch(mergeParamsBatch(url, typeof body === 'string' ? body : null), config);
     }
     return _xhrSend.apply(this, arguments);
   };
@@ -141,5 +111,14 @@ function sendRaw(params, config) {
 })();
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { isGA4: isGA4, parseQS: parseQS, mergeParams: mergeParams, consentGranted: consentGranted, shouldExclude: shouldExclude, buildPayload: function() {} };
+  module.exports = {
+    isGA4: isGA4,
+    parseQS: params.parseQS,
+    mergeParams: params.mergeParams,
+    mergeParamsBatch: mergeParamsBatch,
+    splitBatchBody: params.splitBatchBody,
+    consentGranted: consentGranted,
+    shouldExclude: shouldExclude,
+    buildPayload: function () {}
+  };
 }
